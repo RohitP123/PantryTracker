@@ -1,5 +1,5 @@
 'use client'
-import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup, IconButton } from "@mui/material";
+import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup, IconButton, InputLabel } from "@mui/material";
 import { query, collection, getDocs, getDoc, setDoc, doc, deleteDoc } from "firebase/firestore";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -13,6 +13,8 @@ export default function Home() {
   const [open, setOpen] = useState(false)
   const [itemName, setItemName] = useState('')
   const [value, setValue] = useState(0);
+  const [itemQuantity, setItemQuantity] = useState('')
+  const [error, setError] = useState('')
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -34,7 +36,7 @@ export default function Home() {
     setInventory(inventoryList)
   }
 
-  const addItem = async (item) => {
+  const addItemQuantity = async (item) => {
     const docRef = doc(collection(firestore, 'inventory'), item)
     const docSnapshot = await getDoc(docRef)
     if (docSnapshot.exists()) {
@@ -45,6 +47,24 @@ export default function Home() {
     }
 
     await updateInventory()
+  }
+
+  const addNewItem = async (item, quantity) => {
+    if (isNaN(quantity)) {
+      setError('Quantity must be a number')
+      return
+    }
+    const docRef = doc(collection(firestore, 'inventory'), item)
+    const docSnapshot = await getDoc(docRef)
+    if (docSnapshot.exists()) {
+      const { quantity: existingQuantity } = docSnapshot.data()
+      await setDoc(docRef, { quantity: existingQuantity + Number(quantity) })
+    } else {
+      await setDoc(docRef, { quantity: Number(quantity) })
+    }
+
+    await updateInventory()
+    setError('')
   }
 
   const removeItem = async (item) => {
@@ -106,27 +126,57 @@ export default function Home() {
               >
                 <Typography variant="h6">Add Item</Typography>
                 <Stack width="100%" direction="row" spacing={2}>
-                  <TextField
-                    variant="outlined"
-                    fullWidth
-                    value={itemName}
-                    onChange={(e) => {
-                      setItemName(e.target.value)
-                    }}
-                  >
-                  </TextField>
+
+                  <Box width="100%">
+                    <InputLabel htmlFor="name-input">Name</InputLabel>
+                    <TextField
+                      id="name-input"
+                      variant="outlined"
+                      fullWidth
+                      value={itemName}
+                      onChange={(e) => {
+                        setItemName(e.target.value)
+                      }}
+                    >
+                    </TextField>
+                  </Box>
+
+                  <Box width="100%">
+                    <InputLabel htmlFor="quantity-input">Quantity</InputLabel>
+                    <TextField
+                      id="quantity-input"
+                      variant="outlined"
+                      fullWidth
+                      value={itemQuantity}
+                      onChange={(e) => {
+                        const quantity = e.target.value;
+                        if (isNaN(quantity)) {
+                          setError('Quantity must be a number');
+                        } else {
+                          setError('');
+                        }
+                        setItemQuantity(quantity);
+                      }}
+                    >
+                    </TextField>
+                  </Box>
+
                   <Button
                     variant="outlined"
                     onClick={() => {
-                      addItem(itemName)
-                      setItemName('')
-                      handleClose()
+                      if (!error) {
+                        addNewItem(itemName.toLowerCase(), itemQuantity)
+                        setItemName('')
+                        setItemQuantity('')
+                        handleClose()
+                      }
                     }}
-                    sx={{ backgroundColor: 'black', color: 'white'}}
+                    sx={{ backgroundColor: 'black', color: 'white', height: '100%' }}
                   >
                     Add
                   </Button>
                 </Stack>
+                {error && <Typography color="error">{error}</Typography>}
               </Box>
             </Modal>
 
@@ -181,7 +231,7 @@ export default function Home() {
                           <Button
                             sx={{ backgroundColor: 'black', color: 'white' }}
                             onClick={() => {
-                              addItem(name)
+                              addItemQuantity(name)
                             }}
                           >
                             +
