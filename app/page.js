@@ -1,10 +1,11 @@
 'use client'
-import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup } from "@mui/material";
+import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup, IconButton } from "@mui/material";
 import { query, collection, getDocs, getDoc, setDoc, doc, deleteDoc } from "firebase/firestore";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { firestore } from "../firebase";
 import React from 'react';
+import MenuIcon from '@mui/icons-material/Menu';
 
 
 export default function Home() {
@@ -15,6 +16,12 @@ export default function Home() {
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
+  };
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
   };
 
   const updateInventory = async () => {
@@ -68,11 +75,11 @@ export default function Home() {
   const handleOpen = () => setOpen(true)
   const handleClose = () => setOpen(false)
 
+  const [searchTerm, setSearchTerm] = useState('');
+
   const renderTabContent = () => {
     switch (value) {
       case 0:
-
-        const [searchTerm, setSearchTerm] = useState('');
 
         const filteredInventory = inventory.filter(({ name }) =>
           name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -115,6 +122,7 @@ export default function Home() {
                       setItemName('')
                       handleClose()
                     }}
+                    sx={{ backgroundColor: 'black', color: 'white'}}
                   >
                     Add
                   </Button>
@@ -213,34 +221,74 @@ export default function Home() {
   };
 
   return (
-    <Box
-      display="flex"
-      height="100vh"
-    >
-      <Drawer
-        variant="permanent"
+    <Box display="flex" height="100vh">
+      <Box
         sx={{
-          width: '240px',
+          width: '64px',
+          height: '64px',
+          display: 'flex',
+          alignItems: 'right',
+          justifyContent: 'right',
+        }}
+      >
+        <IconButton
+          edge="start"
+          color="inherit"
+          aria-label="menu"
+          sx={{ mr: 2 }}
+          onClick={toggleDrawer}
+        >
+          <MenuIcon />
+        </IconButton>
+      </Box>
+
+      <Drawer
+        variant="persistent"
+        open={drawerOpen}
+        onClose={toggleDrawer}
+        sx={{
+          width: drawerOpen ? '240px' : '0px',
           flexShrink: 0,
           '& .MuiDrawer-paper': {
-            width: '240px',
+            width: drawerOpen ? '240px' : '0px',
             boxSizing: 'border-box',
           },
         }}
       >
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          orientation="vertical"
-          variant="fullWidth"
+        <Box
+          sx={{
+            width: '64px',
+            height: '64px',
+            display: 'flex',
+            alignItems: 'right',
+            justifyContent: 'right',
+          }}
         >
-          <Tab label="Inventory" />
-          <Tab label="Create Recipe" />
-          <Tab label="Scan Items" />
-        </Tabs>
+          <IconButton
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+            onClick={toggleDrawer}
+          >
+            <MenuIcon />
+          </IconButton>
+        </Box>
+        {drawerOpen && (
+          <Tabs
+            value={value}
+            onChange={handleChange}
+            orientation="vertical"
+            variant="fullWidth"
+          >
+            <Tab label="Inventory" />
+            <Tab label="Create Recipe" />
+            <Tab label="Scan Items" />
+          </Tabs>
+        )}
       </Drawer>
       <Box
-        p={3}
+        padding="16px 8px 0px 0px"
         width="100%"
         overflow="auto"
       >
