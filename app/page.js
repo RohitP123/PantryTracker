@@ -1,11 +1,12 @@
 'use client'
-import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup, IconButton, InputLabel } from "@mui/material";
+import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup, IconButton, InputLabel, Checkbox } from "@mui/material";
 import { query, collection, getDocs, getDoc, setDoc, doc, deleteDoc } from "firebase/firestore";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { firestore } from "../firebase";
 import React from 'react';
 import MenuIcon from '@mui/icons-material/Menu';
+import Groq from "groq-sdk";
 
 
 export default function Home() {
@@ -15,6 +16,12 @@ export default function Home() {
   const [value, setValue] = useState(0);
   const [itemQuantity, setItemQuantity] = useState('')
   const [error, setError] = useState('')
+  const [recipe, setRecipe] = useState('');
+  const [selectedItems, setSelectedItems] = useState([]);
+
+  require('dotenv').config()
+
+  const groq = new Groq({ apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY, dangerouslyAllowBrowser: true });
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -87,6 +94,30 @@ export default function Home() {
     await deleteDoc(docRef)
     await updateInventory()
   }
+
+  const generateRecipe = async () => {
+    const inventoryItems = selectedItems.join(', ');
+    const chatCompletion = await groq.chat.completions.create({
+      messages: [
+        {
+          role: "user",
+          content: `Generate a recipe using these ingredients: ${inventoryItems}. 
+          Please proved a detailed recipe, including steps for preparation and cooking.
+          Also include a title for the recipe`,
+        },
+      ],
+      model: "llama3-8b-8192",
+    });
+    setRecipe(chatCompletion.choices[0]?.message?.content || "");
+  }
+
+  const handleCheck = (event, name) => {
+    if (event.target.checked) {
+      setSelectedItems([...selectedItems, name]);
+    } else {
+      setSelectedItems(selectedItems.filter(item => item !== name));
+    }
+  };
 
   useEffect(() => {
     updateInventory()
@@ -262,11 +293,77 @@ export default function Home() {
           </>
         );
       case 1:
-        return <div>Create Recipe Content</div>;
+
+        const handleSelectItem = (item) => {
+          setSelectedItems(prevItems => [...prevItems, item]);
+        };
+
+        return (
+          <Box display="flex" justifyContent="space-between" >
+            <Box 
+              p={2} 
+              sx={{ width: '40%' }}>
+              <TableContainer component={Paper}
+                style={{ 
+                  height: 'calc(100vh - 100px)' }}
+                >
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Inventory Items</TableCell>
+                      <TableCell>Select</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {inventory.map(({ name }) => (
+                      <TableRow key={name}>
+                        <TableCell component="th" scope="row">
+                          {name.charAt(0).toUpperCase() + name.slice(1)}
+                        </TableCell>
+                        <TableCell>
+                          <Checkbox
+                            color="primary"
+                            onChange={(event) => handleCheck(event, name)}
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Button
+                variant="contained"
+                onClick={() => generateRecipe()}
+                sx={{ backgroundColor: 'black', color: 'white', width: '100%', marginTop: '10px' }}
+                
+              >
+                Generate Recipe
+              </Button>
+            </Box>
+        
+            {recipe && (
+              <Box 
+                mt={2} 
+                p={2} 
+                border={1} 
+                borderColor="divider" 
+                style={{ 
+                  wordWrap: 'break-word', 
+                  overflow: 'auto', 
+                  height: 'calc(100vh - 100px)'
+                }}
+                sx={{ width: '60%' }}
+              >
+                <Typography variant="h6">Your Recipe:</Typography>
+                <pre>{recipe}</pre>
+              </Box>
+            )}
+          </Box>
+        );
       case 2:
-        return <div>Scan Items Content</div>;
+        return <div>Coming Soon</div>;
       default:
-        return <div>Test</div>;
+        return <div>Coming Soon</div>;
     }
   };
 
