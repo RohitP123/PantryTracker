@@ -1,4 +1,4 @@
-'use client'
+'use client';
 import { Box, Modal, Stack, TextField, Typography, Button, Tabs, Tab, Drawer, TableContainer, Table, TableHead, TableRow, Paper, TableCell, TableBody, ButtonGroup, IconButton, InputLabel, Checkbox } from "@mui/material";
 import { query, collection, getDocs, getDoc, setDoc, doc, deleteDoc } from "firebase/firestore";
 import Image from "next/image";
